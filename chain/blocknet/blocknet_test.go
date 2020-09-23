@@ -11,7 +11,6 @@ import (
 	"github.com/renproject/id"
 	"github.com/renproject/multichain/api/address"
 	"github.com/renproject/multichain/api/utxo"
-	"github.com/renproject/multichain/chain/bitcoin"
 	"github.com/renproject/multichain/chain/blocknet"
 	"github.com/renproject/pack"
 
@@ -33,21 +32,24 @@ var _ = Describe("Blocknet", func() {
 				wif, err := btcutil.DecodeWIF(pkEnv)
 				Expect(err).ToNot(HaveOccurred())
 
+				// Change to mainnet for testing mainnet specific txs
+				params := &blocknet.TestnetParams
+
 				// PKH
-				wpkhAddr, err := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(wif.PrivKey.PubKey().SerializeCompressed()), &blocknet.RegressionNetParams)
+				wpkhAddr, err := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(wif.PrivKey.PubKey().SerializeCompressed()), params)
 				Expect(err).ToNot(HaveOccurred())
 				log.Printf("WPKH               %v", wpkhAddr.EncodeAddress())
 
 				// PKH
-				pkhAddr, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(wif.PrivKey.PubKey().SerializeCompressed()), &blocknet.RegressionNetParams)
+				pkhAddr, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(wif.PrivKey.PubKey().SerializeCompressed()), params)
 				Expect(err).ToNot(HaveOccurred())
-				pkhAddrUncompressed, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(wif.PrivKey.PubKey().SerializeUncompressed()), &blocknet.RegressionNetParams)
+				pkhAddrUncompressed, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(wif.PrivKey.PubKey().SerializeUncompressed()), params)
 				Expect(err).ToNot(HaveOccurred())
 				log.Printf("PKH                %v", pkhAddr.EncodeAddress())
 				log.Printf("PKH (uncompressed) %v", pkhAddrUncompressed.EncodeAddress())
 
 				// Setup the client and load the unspent transaction outputs.
-				client := bitcoin.NewClient(bitcoin.DefaultClientOptions().WithHost("http://127.0.0.1:41414"))
+				client := blocknet.NewClient(blocknet.DefaultClientOptions().WithHost("http://127.0.0.1:41419")) // Testnet rpc port
 				outputs, err := client.UnspentOutputs(context.Background(), 0, 999999999, address.Address(pkhAddr.EncodeAddress()))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(outputs)).To(BeNumerically(">", 0))
@@ -68,18 +70,18 @@ var _ = Describe("Blocknet", func() {
 				recipients := []utxo.Recipient{
 					{
 						To:    address.Address(wpkhAddr.EncodeAddress()),
-						Value: pack.NewU256FromU64(pack.NewU64((output.Value.Int().Uint64() - 1000) / 3)),
+						Value: pack.NewU256FromU64(pack.NewU64((output.Value.Int().Uint64() - 6000) / 3)),
 					},
 					{
 						To:    address.Address(pkhAddr.EncodeAddress()),
-						Value: pack.NewU256FromU64(pack.NewU64((output.Value.Int().Uint64() - 1000) / 3)),
+						Value: pack.NewU256FromU64(pack.NewU64((output.Value.Int().Uint64() - 6000) / 3)),
 					},
 					{
 						To:    address.Address(pkhAddrUncompressed.EncodeAddress()),
-						Value: pack.NewU256FromU64(pack.NewU64((output.Value.Int().Uint64() - 1000) / 3)),
+						Value: pack.NewU256FromU64(pack.NewU64((output.Value.Int().Uint64() - 6000) / 3)),
 					},
 				}
-				tx, err := blocknet.NewTxBuilder(&blocknet.RegressionNetParams).BuildTx(inputs, recipients)
+				tx, err := blocknet.NewTxBuilder(params).BuildTx(inputs, recipients)
 				Expect(err).ToNot(HaveOccurred())
 
 				// Get the digests that need signing from the transaction, and
