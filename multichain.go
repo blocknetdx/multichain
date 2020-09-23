@@ -100,6 +100,7 @@ type Asset string
 // enumerated values. Assets must be listed in alphabetical order.
 const (
 	BCH  = Asset("BCH")  // Bitcoin Cash
+	BLOCK = Asset("BLOCK")  // Blocknet
 	BNB  = Asset("BNB")  // Binance Coin
 	BTC  = Asset("BTC")  // Bitcoin
 	CELO = Asset("CELO") // Celo
@@ -185,6 +186,7 @@ const (
 	BinanceSmartChain = Chain("BinanceSmartChain")
 	Bitcoin           = Chain("Bitcoin")
 	BitcoinCash       = Chain("BitcoinCash")
+	Blocknet          = Chain("Blocknet")
 	Celo              = Chain("Celo")
 	DigiByte          = Chain("DigiByte")
 	Dogecoin          = Chain("Dogecoin")
